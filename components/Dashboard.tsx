@@ -32,20 +32,44 @@ const createNewProperty = (name: string): Property => {
         },
         oneTimeExpenses: [
             { id: '1', name: '中介费', amount: 25000, category: 'pre' },
-            { id: '5', name: '银行手续费', amount: 5250, category: 'pre' },
+            { id: '2', name: '首次评估费用', amount: 2625, category: 'pre' },
+            { id: '3', name: '第二次评估费用', amount: 3100, category: 'pre' },
+            { id: '4', name: '房产保险', amount: 630, category: 'pre' },
+            { id: '5', name: '银行手续费', amount: 3150, category: 'pre' },
+            { id: '6', name: 'FOL', amount: 1050, category: 'pre' },
+            { id: '7', name: '服务费税费', amount: 1250, category: 'pre' },
+            { id: '8', name: '过户中心手续费', amount: 4200, category: 'pre' },
+            { id: '9', name: '产证费', amount: 580, category: 'pre' },
+            { id: '10', name: '房屋粉刷维修', amount: 1560, category: 'post' },
+            { id: '11', name: '空调维修', amount: 3699, category: 'post' },
+            { id: '12', name: '保洁', amount: 400, category: 'post' },
         ],
-        monthlyInputs: {}
+        monthlyInputs: {
+            1: { dewa: 2130, ac: 2423.38, serviceFees: 1146, loanPayment: 5552.65 },
+            2: { dewa: 542.33, ac: 587.06, serviceFees: 4915.71, loanPayment: 5552.65, rentalIncome: 5880 },
+            3: { loanPayment: 5552.65, rentalIncome: 13000 },
+            4: { loanPayment: 5552.65, rentalIncome: 13000 },
+            5: { serviceFees: 4915.71, loanPayment: 5552.65, rentalIncome: 13000 },
+            6: { loanPayment: 5552.65, rentalIncome: 13000 },
+            7: { loanPayment: 5552.65, rentalIncome: 13000 },
+            8: { serviceFees: 4915.71, loanPayment: 5552.65, rentalIncome: 13000 },
+            9: { loanPayment: 5552.65, rentalIncome: 13000 },
+            10: { loanPayment: 5552.65, rentalIncome: 13000 },
+            11: { serviceFees: 4915.71, loanPayment: 5552.65, rentalIncome: 13000 },
+            12: { loanPayment: 5552.65, rentalIncome: 13000 },
+            13: { loanPayment: 5552.65 },
+            14: { loanPayment: 5552.65 },
+        }
     };
 };
 
 const Dashboard: React.FC = () => {
-  const [properties, setProperties] = useState<Property[]>(() => [createNewProperty('示例房产')]);
+  const [properties, setProperties] = useState<Property[]>(() => [createNewProperty("Ontario Tower 907")]);
   const [activePropertyId, setActivePropertyId] = useState<string | null>(properties.length > 0 ? properties[0].id : null);
-  
   const [mainView, setMainView] = useState<MainView>('dashboard');
   const [mobileOverlay, setMobileOverlay] = useState<MobileOverlay>('none');
   const [chartRange, setChartRange] = useState<ChartRange>('yearly');
-  
+
   const activeProperty = useMemo(() => properties.find(p => p.id === activePropertyId), [properties, activePropertyId]);
   
   const [estimatedSalePrice, setEstimatedSalePrice] = useState(activeProperty?.settings.propertyValue || 0);
@@ -59,11 +83,15 @@ const Dashboard: React.FC = () => {
   }, [activeProperty]);
 
   const handleUpdateProperty = useCallback((updatedProperty: Property) => {
-    setProperties(current => current.map(p => (p.id === updatedProperty.id ? updatedProperty : p)));
+      setProperties(currentProperties => 
+          currentProperties.map(p => (p.id === updatedProperty.id ? updatedProperty : p))
+      );
   }, []);
   
   const handleRenameProperty = useCallback((id: string, newName: string) => {
-    setProperties(current => current.map(p => (p.id === id ? { ...p, name: newName } : p)));
+      setProperties(currentProperties => 
+          currentProperties.map(p => (p.id === id ? { ...p, name: newName } : p))
+      );
   }, []);
 
   const handleAddProperty = useCallback(() => {
@@ -76,11 +104,11 @@ const Dashboard: React.FC = () => {
   const handleDeleteProperty = useCallback((id: string) => {
     if (!window.confirm('您确定要删除此房产吗？此操作无法撤销。')) return;
     
-    const remaining = properties.filter(p => p.id !== id);
-    setProperties(remaining);
+    const remainingProperties = properties.filter(p => p.id !== id);
+    setProperties(remainingProperties);
 
     if (activePropertyId === id) {
-        setActivePropertyId(remaining.length > 0 ? remaining[0].id : null);
+        setActivePropertyId(remainingProperties.length > 0 ? remainingProperties[0].id : null);
     }
   }, [properties, activePropertyId]);
 
@@ -201,7 +229,7 @@ const Dashboard: React.FC = () => {
     let csvContent = headers.join(',') + '\n';
 
     let cumulativeNet = 0;
-    const fixedStartDate = new Date(2025, 7, 1);
+    const fixedStartDate = new Date(2025, 7, 1); // August is month 7 (0-indexed)
 
     detailedPortfolioResults.forEach((month, index) => {
       const income = month.rentalIncome || 0;
@@ -214,12 +242,21 @@ const Dashboard: React.FC = () => {
       const dateLabel = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       
       const rowData = [
-        index + 1, dateLabel, month.rentalIncome || 0, month.loanPayment || 0, month.dewa || 0,
-        month.ac || 0, month.serviceFees || 0, month.otherMaintenance || 0,
-        month.oneTimeExpenses || 0, monthlyNet, cumulativeNet
+        index + 1,
+        dateLabel,
+        month.rentalIncome || 0,
+        month.loanPayment || 0,
+        month.dewa || 0,
+        month.ac || 0,
+        month.serviceFees || 0,
+        month.otherMaintenance || 0,
+        month.oneTimeExpenses || 0,
+        monthlyNet,
+        cumulativeNet
       ];
       
-      csvContent += rowData.join(',') + '\n';
+      const row = rowData.join(',');
+      csvContent += row + '\n';
     });
 
     const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
@@ -284,22 +321,45 @@ const Dashboard: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
                 <div>
                     <label className="label text-xs font-semibold text-slate-500 uppercase">预估售出房价 (AED)</label>
-                    <input type="number" className="w-full pl-3 pr-3 py-2 border rounded-md focus:ring-2 focus:ring-brand-gold focus:outline-none" value={estimatedSalePrice} onChange={(e) => setEstimatedSalePrice(parseFloat(e.target.value) || 0)} />
+                    <input 
+                        type="number"
+                        className="w-full pl-3 pr-3 py-2 border rounded-md focus:ring-2 focus:ring-brand-gold focus:outline-none"
+                        value={estimatedSalePrice}
+                        onChange={(e) => setEstimatedSalePrice(parseFloat(e.target.value) || 0)}
+                    />
                 </div>
                 <div>
                     <label className="label text-xs font-semibold text-slate-500 uppercase">持有月数</label>
-                    <input type="number" className="w-full pl-3 pr-3 py-2 border rounded-md focus:ring-2 focus:ring-brand-gold focus:outline-none" value={monthsHeld} onChange={(e) => setMonthsHeld(parseInt(e.target.value) || 0)} />
+                    <input 
+                        type="number"
+                        className="w-full pl-3 pr-3 py-2 border rounded-md focus:ring-2 focus:ring-brand-gold focus:outline-none"
+                        value={monthsHeld}
+                        onChange={(e) => setMonthsHeld(parseInt(e.target.value) || 0)}
+                    />
                 </div>
             </div>
             <div className="border-t border-slate-100 my-2"></div>
             <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-slate-500">贷款剩余本金 (估算)</span><span className="font-medium text-slate-700">{formatCurrency(saleProjection.remainingPrincipal)}</span></div>
-                <div className="flex justify-between"><span className="text-slate-500">提前还款罚金 (估算)</span><span className="font-medium text-slate-700">{formatCurrency(saleProjection.earlyRepaymentPenalty)}</span></div>
-                <div className="flex justify-between"><span className="text-slate-500">净收益</span><span className={`font-bold ${saleProjection.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(saleProjection.totalProfit)}</span></div>
-                <div className="border-t border-slate-100 my-2"></div>
+                <div className="flex justify-between">
+                    <span className="text-slate-500">贷款剩余本金 (估算)</span>
+                    <span className="font-medium text-slate-700">{formatCurrency(saleProjection.remainingPrincipal)}</span>
+                </div>
+                <div className="flex justify-between">
+                    <span className="text-slate-500">提前还款罚金 (估算)</span>
+                    <span className="font-medium text-slate-700">{formatCurrency(saleProjection.earlyRepaymentPenalty)}</span>
+                </div>
+                <div className="flex justify-between">
+                    <span className="text-slate-500">净收益</span>
+                    <span className={`font-bold ${saleProjection.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatCurrency(saleProjection.totalProfit)}
+                    </span>
+                </div>
+                 <div className="border-t border-slate-100 my-2"></div>
                 <div className="flex justify-between items-center bg-brand-gold-light p-3 rounded-lg">
                     <span className="font-bold text-brand-gold-dark">年化收益率 (ROI)</span>
-                    <span className={`text-xl font-extrabold ${saleProjection.annualizedROI >= 0 ? 'text-brand-gold-dark' : 'text-red-600'}`}>{saleProjection.annualizedROI.toFixed(2)}%</span>
+                    <span className={`text-xl font-extrabold ${saleProjection.annualizedROI >= 0 ? 'text-brand-gold-dark' : 'text-red-600'}`}>
+                        {saleProjection.annualizedROI.toFixed(2)}%
+                    </span>
                 </div>
             </div>
         </div>
@@ -313,7 +373,12 @@ const Dashboard: React.FC = () => {
                  <div className="text-center">
                      <h3 className="font-bold text-lg text-brand-slate mb-2">欢迎使用!</h3>
                      <p className="text-slate-500 mb-4">您还没有任何房产，请在侧边栏添加您的第一处房产。</p>
-                     <button onClick={handleAddProperty} className="bg-brand-blue text-white font-semibold px-6 py-2 rounded-lg hover:bg-brand-blue-dark transition-colors shadow-sm">添加第一处房产</button>
+                     <button 
+                        onClick={handleAddProperty}
+                        className="bg-brand-blue text-white font-semibold px-6 py-2 rounded-lg hover:bg-brand-blue-dark transition-colors shadow-sm"
+                     >
+                         添加第一处房产
+                     </button>
                  </div>
             </div>
         );
@@ -326,28 +391,42 @@ const Dashboard: React.FC = () => {
                     {renderPropertyInfo()}
                     <header className="px-4 md:px-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
                         <div className="bg-gradient-to-br from-red-100 to-white p-4 rounded-xl border border-red-200 shadow-sm flex flex-col justify-between">
-                            <div className="flex justify-between items-start"><span className="text-xs font-bold text-red-700 uppercase tracking-wider">总支出</span><TrendingDown className="w-5 h-5 text-red-500" /></div>
+                            <div className="flex justify-between items-start">
+                                <span className="text-xs font-bold text-red-700 uppercase tracking-wider">总支出</span>
+                                <TrendingDown className="w-5 h-5 text-red-500" />
+                            </div>
                             <div className="mt-2">
                                 <div className="text-xl md:text-2xl font-extrabold text-brand-slate">{formatCurrency(totalExpenseForCard)}</div>
                                 <div className="text-xs text-slate-500 mt-1 hidden sm:block">已排除首付: {formatCurrency(totalDownPayment)}</div>
                             </div>
                         </div>
                         <div className="bg-gradient-to-br from-green-100 to-white p-4 rounded-xl border border-green-200 shadow-sm flex flex-col justify-between">
-                            <div className="flex justify-between items-start"><span className="text-xs font-bold text-green-700 uppercase tracking-wider">总收入</span><TrendingUp className="w-5 h-5 text-green-500" /></div>
+                            <div className="flex justify-between items-start">
+                                <span className="text-xs font-bold text-green-700 uppercase tracking-wider">总收入</span>
+                                <TrendingUp className="w-5 h-5 text-green-500" />
+                            </div>
                             <div className="mt-2">
                                 <div className="text-xl md:text-2xl font-extrabold text-green-600">{formatCurrency(totals.income)}</div>
                                 <div className="text-xs text-slate-500 mt-1 hidden sm:block">所有房产总计</div>
                             </div>
                         </div>
                         <div className="bg-gradient-to-br from-brand-gold-light to-white p-4 rounded-xl border border-brand-gold shadow-sm flex flex-col justify-between">
-                            <div className="flex justify-between items-start"><span className="text-xs font-bold text-brand-gold-dark uppercase tracking-wider">净收益/亏损</span><Wallet className="w-5 h-5 text-brand-gold-dark" /></div>
+                            <div className="flex justify-between items-start">
+                                <span className="text-xs font-bold text-brand-gold-dark uppercase tracking-wider">净收益/亏损</span>
+                                <Wallet className="w-5 h-5 text-brand-gold-dark" />
+                            </div>
                             <div className="mt-2">
-                                <div className={`text-xl md:text-2xl font-extrabold ${totals.net >= 0 ? 'text-brand-slate' : 'text-red-600'}`}>{formatCurrency(totals.net)}</div>
+                                <div className={`text-xl md:text-2xl font-extrabold ${totals.net >= 0 ? 'text-brand-slate' : 'text-red-600'}`}>
+                                    {formatCurrency(totals.net)}
+                                </div>
                                 <div className="text-xs text-slate-500 mt-1 hidden sm:block">期间总计</div>
                             </div>
                         </div>
                         <div className="bg-gradient-to-br from-brand-blue-light to-white p-4 rounded-xl border border-brand-blue shadow-sm flex flex-col justify-between">
-                            <div className="flex justify-between items-start"><span className="text-xs font-bold text-brand-blue-dark uppercase tracking-wider">投资组合价值</span><Landmark className="w-5 h-5 text-brand-blue-dark" /></div>
+                            <div className="flex justify-between items-start">
+                                <span className="text-xs font-bold text-brand-blue-dark uppercase tracking-wider">投资组合价值</span>
+                                <Landmark className="w-5 h-5 text-brand-blue-dark" />
+                            </div>
                             <div className="mt-2">
                                 <div className="text-xl md:text-2xl font-extrabold text-brand-slate">{formatCurrency(totals.propertyValue)}</div>
                                 <div className="text-xs text-slate-500 mt-1 hidden sm:block">已付还款总额: {formatCurrency(totals.totalLoanPayments)}</div>
@@ -359,10 +438,17 @@ const Dashboard: React.FC = () => {
                              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
                                 <div className="flex items-center gap-4">
                                   <h3 className="text-lg font-bold text-brand-slate">投资组合现金流</h3>
-                                  <button onClick={handleExport} className="flex items-center gap-1.5 text-xs font-semibold text-brand-blue-dark bg-brand-blue-light px-3 py-1.5 rounded-md hover:bg-brand-blue/30 transition-colors"><FileDown className="w-4 h-4" />导出Excel</button>
+                                  <button onClick={handleExport} className="flex items-center gap-1.5 text-xs font-semibold text-brand-blue-dark bg-brand-blue-light px-3 py-1.5 rounded-md hover:bg-brand-blue/30 transition-colors">
+                                    <FileDown className="w-4 h-4" />
+                                    导出Excel
+                                  </button>
                                 </div>
                                 <div className="bg-slate-100 p-1 rounded-lg flex gap-1 mt-2 sm:mt-0">
-                                    {(['monthly', 'yearly', '5y', '10y', '25y'] as ChartRange[]).map(r => (<button key={r} onClick={() => setChartRange(r)} className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${chartRange === r ? 'bg-white text-brand-blue-dark shadow-sm' : 'text-slate-500 hover:bg-white/50'}`}>{r.toUpperCase()}</button>))}
+                                    {(['monthly', 'yearly', '5y', '10y', '25y'] as ChartRange[]).map(r => (
+                                        <button key={r} onClick={() => setChartRange(r)} className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${chartRange === r ? 'bg-white text-brand-blue-dark shadow-sm' : 'text-slate-500 hover:bg-white/50'}`}>
+                                            {r.toUpperCase()}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
                             <div className="flex-1 w-full min-h-0">
